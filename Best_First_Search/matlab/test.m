@@ -13,7 +13,7 @@ number = 40;
 %% test: the start point lateral position vary within road width, the heading angle vary from -pi/3 to pi/3
 % % *note: (1) path planning fails in some cases (currently found):
 % %            i). initial position is too close to obstacle (this situation is actually unsolvable unless allowing reverse motion)
-% %            ii). initial position and heading angle deviate too extreme when road curvature is very large      
+% %            ii). road point sets are very dense in the planning section, affecting the shape and size of search space severely       
 % %        (2) turn on plots in prediction for showing results
 idx = randi(size(cline,2));
 p = cline(:,idx) + (12*rand-cline_to_left)*vertical(:,idx);
