@@ -1,7 +1,13 @@
 function path = heuristic(start,goal)
  
+% % inputs: start -> unit:[m,m,radian]' size:3X1, initial position and heading angle of vehicle
+% %         goal -> unit:[m,m]' size:2X1, position of goal
+% % output: path -> [m,m,radian]'(for each column) size:3Xnumber of points required to reach the goal
+% %         each column reflect the position and heading angle
+
 % Node vector components:
 % x,y,theta,self_id,parent_id,[x1,y1,theta1,...,x4,y4,theta4]
+% (variables in the braket stands for intermediate states between two Nodes)
 start_node = [start;zeros(15,1)];
 
 % initialize parameters 
@@ -39,7 +45,7 @@ while ~isempty(frontier)
         continue
     end
     
-    % If found the goal, return the path
+    % If reach the vicinity of goal, return the path
     if norm(current_node(1:2)-goal(1:2))<5
         current_id = current_node(4);
         while current_id ~= 0

@@ -4,7 +4,11 @@ function sequence = prediction(initial,u,dt,number)
 % %         u -> unit:(m/s), constant longitudinal velocity
 % %         dt -> unit:s, time interval between neighbouring points of planned trajectory
 % %         number -> quantity of points needed in planned trajectory
-% % output: sequence -> unit:[m,m,m]' size: 3Xnumber, each column reflects the position and lateral error from the center line of right lane
+% % output: sequence -> unit:[m,m,m]'(for each column) size:3Xnumber, each column reflects the 
+% %         position and lateral error from the center line of right lane
+% % *note: (1) plots can be turned on to show the road section, search space
+% %        and planned trajectory
+% %        (2) the function is designed to take in at most one obstalce
 
 global cline obstacle direction vertical right center left cline_right cline_left obs_cline 
 
@@ -83,6 +87,10 @@ cline_left_part = cline_left(:,I_start:I_start+section);
 %% boundaries of lane-keeping section when no obstacle exists in the road section 
 global boundary
 boundary = [cline_right_part(:,1+entry_length:end) fliplr(cline_left_part(:,1+entry_length:end)) cline_right_part(:,1+entry_length)];
+
+% % plots showing the boundaries and center line of the road section, as 
+% % well as the lane-keeping line (center line of right lane)
+
 % plot(cline_part(1,:),cline_part(2,:),'g',right_part(1,:),right_part(2,:),...
 %     'k',left_part(1,:),left_part(2,:),'k',center_part(1,:),center_part(2,:),'k--')
 % hold on
@@ -110,6 +118,9 @@ if ~isempty(obs_idx)
         boundary_obs_4 boundary_obs_1(:,1)];
     boundary_obs_in = [obs_right_b obs_left_b_1 obs_left_b_2];
     boundary_obs = [boundary_obs_out seperate boundary_obs_in];
+    
+% % plots showing the obstacle position and boundaries of obstalce avoidance section
+    
 %     plot(obstacle(1,obs_idx),obstacle(2,obs_idx),'ro');
 %     hold on
 %     plot(boundary_obs_out(1,:),boundary_obs_out(2,:),'r',boundary_obs_in(1,:),...
@@ -122,22 +133,34 @@ if ~isempty(obs_idx)
             cline_right(:,I_start+entry_length)];
         boundary_back = [cline_right(:,cline_idx+obs_to_end:I_start+section) fliplr(cline_left(:,cline_idx+obs_to_end:I_start+section)) ...
             cline_right(:,cline_idx+obs_to_end)];
+
+% % plots showing boundaries of lane-keeping section
+        
 %         plot(boundary_front(1,:),boundary_front(2,:),'r',boundary_back(1,:),...
 %             boundary_back(2,:),'r')
 %         hold on
     elseif cline_idx - I_start < entry_length + entry_to_obs + obs_to_front
         boundary_back = [cline_right(:,cline_idx+obs_to_end:I_start+section) fliplr(cline_left(:,cline_idx+obs_to_end:I_start+section)) ...
             cline_right(:,cline_idx+obs_to_end)];
+        
+% % plots showing boundaries of lane-keeping section
+        
 %         plot(boundary_back(1,:),boundary_back(2,:),'r')
 %         hold on
     else
         boundary_front = [cline_right(:,I_start+entry_length:cline_idx-obs_to_front) fliplr(cline_left(:,I_start+entry_length:cline_idx-obs_to_front)) ...
             cline_right(:,I_start+entry_length)];
+        
+% % plots showing boundaries of lane-keeping section
+        
 %         plot(boundary_front(1,:),boundary_front(2,:),'r')
 %         hold on
     end
     
 else
+    
+% % plots showing boundaries of lane-keeping section
+    
 %     plot(boundary(1,:),boundary(2,:),'r');
 end
 
@@ -180,6 +203,9 @@ if isempty(cline_idx)
         boundary_entry = [boundary_entry_1 boundary_entry_2 boundary_entry_3 ...
             boundary_entry_1(:,1)];
     end
+    
+% % plots showing boundaries of entry section
+    
 %     plot(boundary_entry(1,:),boundary_entry(2,:),'r');
 elseif cline_idx - I_start < entry_length + entry_to_obs + obs_to_front && cline_idx - I_start > obs_to_front
     if d_v > 0
@@ -189,6 +215,9 @@ elseif cline_idx - I_start < entry_length + entry_to_obs + obs_to_front && cline
         boundary_entry = [cline(:,I_start:cline_idx-obs_to_front) + ((d_v-entry_margin):-(d_v+cline_to_left-entry_margin)/(cline_idx-obs_to_front-I_start):-cline_to_left).*vertical(:,I_start:cline_idx-obs_to_front) ...
             fliplr(right(:,I_start:cline_idx-obs_to_front))];
     end
+    
+% % plots showing boundaries of entry section
+    
 %     plot(boundary_entry(1,:),boundary_entry(2,:),'r');
 elseif cline_idx - I_start >= entry_length + entry_to_obs + obs_to_front
     if d_v > 0 && a_d(3) >= 0
@@ -218,10 +247,13 @@ elseif cline_idx - I_start >= entry_length + entry_to_obs + obs_to_front
         boundary_entry = [boundary_entry_1 boundary_entry_2 boundary_entry_3 ...
             boundary_entry_1(:,1)];
     end
+    
+% % plots showing boundaries of entry section
+    
 %     plot(boundary_entry(1,:),boundary_entry(2,:),'r');
 end
     
-%% find path using heuristic search
+%% find trajectory path using best first search, return empty sequence if not found
 path = heuristic(initial,cline_part(:,end));
 if isempty(path)
     'path planning failure'
@@ -229,7 +261,7 @@ if isempty(path)
     return
 end
 
-%% compute output sequence
+%% compute output trajectory sequence
 path_need = path(1:3,1:1+ceil(required_length));
 sequence = zeros(3,number);
 for i = 1:number
@@ -244,6 +276,9 @@ for i = 1:number
         sequence(:,i)=[next_xy;-lateral];
     end
 end
+
+% % plots positions and lateral errors of trajectory sequence 
+
 %plot(sequence(1,:),sequence(2,:),'bx')
 %figure()
 %plot(1:number,sequence(3,:))

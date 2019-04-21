@@ -1,5 +1,8 @@
 function z = collision(x,y)
 
+% % inputs: x,y -> position of a point
+% % output: z -> z = 0 if the point is inside search space, otherwise z = 1 
+
 global boundary
 global boundary_obs
 global boundary_front
