@@ -1,11 +1,17 @@
 function sequence = prediction(initial,u,dt,number)
 
+% % inputs: initial -> unit:[m,m,radian]' size:3X1, initial position and heading angle of vehicle
+% %         u -> unit:(m/s), constant longitudinal velocity
+% %         dt -> unit:s, time interval between neighbouring points of planned trajectory
+% %         number -> quantity of points needed in planned trajectory
+% % output: sequence -> unit:[m,m,m]' size: 3Xnumber, each column reflects the position and lateral error from the center line of right lane
+
 global cline obstacle direction vertical right center left cline_right cline_left obs_cline 
 
-%% input
+%% required length of the planned trajectory
 required_length = u*dt*number;
 
-%% parameters
+%% parameters for specifying search space boundaries
 cline_to_right = 3;
 cline_to_left = 9;
 cline_half = 0.65;
@@ -25,7 +31,8 @@ obs_left_front = 40;
 %% compute the section of road for prediction
 [~,I_start] = min(vecnorm(cline-initial(1:2)));
 
-% shift point sets if index out of range
+% % shift point sets if index is out of range (when planning starts near the  
+% % end of road point sets)
 shift = 0;
 if I_start+section > length(cline)
     shift = length(cline) - (I_start+section);
@@ -43,7 +50,8 @@ end
 
 cline_part = cline(:,I_start:I_start+section);
 
-% check if the length of section 
+% % check if the length of section is longer than required length, if not,
+% % increase it to length equals to or greater than 1.2 times required length
 section_length = sum(vecnorm(diff(cline_part,1,2)));
 if section_length < 1.2*required_length 
     section = ceil(section*(1.2*required_length)/section_length);
@@ -72,14 +80,14 @@ left_part = left(:,I_start:I_start+section);
 cline_right_part = cline_right(:,I_start:I_start+section);
 cline_left_part = cline_left(:,I_start:I_start+section);
 
-%% search space boundaries after entry part when no obstacle exists in the road section 
+%% boundaries of lane-keeping section when no obstacle exists in the road section 
 global boundary
 boundary = [cline_right_part(:,1+entry_length:end) fliplr(cline_left_part(:,1+entry_length:end)) cline_right_part(:,1+entry_length)];
 % plot(cline_part(1,:),cline_part(2,:),'g',right_part(1,:),right_part(2,:),...
 %     'k',left_part(1,:),left_part(2,:),'k',center_part(1,:),center_part(2,:),'k--')
 % hold on
 
-%% search space boundaries after entry part when an obstacle exists in the road section
+%% boundaries of obstalce avoidance section when an obstacle exists in the road section
 global boundary_obs
 global boundary_front
 global boundary_back
@@ -107,7 +115,8 @@ if ~isempty(obs_idx)
 %     plot(boundary_obs_out(1,:),boundary_obs_out(2,:),'r',boundary_obs_in(1,:),...
 %         boundary_obs_in(2,:),'r')
 %     hold on
-    
+ 
+%% boundaries of lane-keeping section when an obstacle exists in the road section  
     if cline_idx - I_start >= entry_length + entry_to_obs + obs_to_front && I_start + section - cline_idx >= obs_to_end
         boundary_front = [cline_right(:,I_start+entry_length:cline_idx-obs_to_front) fliplr(cline_left(:,I_start+entry_length:cline_idx-obs_to_front)) ...
             cline_right(:,I_start+entry_length)];
@@ -132,7 +141,7 @@ else
 %     plot(boundary(1,:),boundary(2,:),'r');
 end
 
-%% search space boundary of entry part
+%% boundaries of entry section
 global boundary_entry
 boundary_entry = [];
 d_v = (initial(1:2)-cline_part(:,1))'*vertical(:,I_start);
@@ -214,7 +223,11 @@ end
     
 %% find path using heuristic search
 path = heuristic(initial,cline_part(:,end));
-% plot(path(1,:),path(2,:),'b.')
+if isempty(path)
+    'path planning failure'
+    sequence = [];
+    return
+end
 
 %% compute output sequence
 path_need = path(1:3,1:1+ceil(required_length));
@@ -231,12 +244,10 @@ for i = 1:number
         sequence(:,i)=[next_xy;-lateral];
     end
 end
-%plot(sequence(1,:),sequence(2,:),'rx')
+%plot(sequence(1,:),sequence(2,:),'bx')
 %figure()
 %plot(1:number,sequence(3,:))
 
-% d = path_need(3,floor(next))+(next-floor(next))*...
-%         (path_need(3,ceil(next))-path_need(3,floor(next)));
 
 %% shift back point sets if being shifted
 if shift

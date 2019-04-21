@@ -1,10 +1,10 @@
 function path = heuristic(start,goal)
-
+ 
 % Node vector components:
 % x,y,theta,self_id,parent_id,[x1,y1,theta1,...,x4,y4,theta4]
 start_node = [start;zeros(15,1)];
 
-% initialize parameters
+% initialize parameters 
 u = 20;
 L = 2.5;
 dt = 0.05;
@@ -55,7 +55,7 @@ while ~isempty(frontier)
     % Generate children
     for i = input
         
-        % compute new node postion by doing Euler integration for 10 times
+        % compute new node postion by doing Euler integration for 5 times
         x = current_node(1);
         y = current_node(2);
         theta = current_node(3);
@@ -88,6 +88,7 @@ while ~isempty(frontier)
     
 end
 
+path = [];
 return;
 
 end
